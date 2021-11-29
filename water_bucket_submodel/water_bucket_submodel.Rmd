@@ -333,6 +333,8 @@ logistic_solution %>%
  
 ```
 
+####END HERE, everything below is a draft###########
+
 
 ```{r warning=FALSE}
 #ignore below for now
