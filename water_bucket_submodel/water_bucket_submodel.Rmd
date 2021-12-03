@@ -275,22 +275,22 @@ theta_rates <- function(t, theta, params) {
     
     #top layer. Non-infiltrating rainfall is stored in runoff, but leaves the plant-accessible water budget forever. 
       if(i == 1) {
-    inflow = R*S*I
+    inflow = R*S*I/z[i]
     runoff = (R*S)*(1-I)
-    outflow = (-dsat*(theta[i]/theta_sat)^nd)*((theta[i+1]-theta[i])/z[i+1])
+    outflow = (-dsat*(theta[i]/theta_sat)^nd)*((theta[i+1]-theta[i])/z[i+1])/z[i]
   
       }
     
     #middle layers  
       if(!i %in% c(1, n)) {
-     inflow = (-dsat*(theta[i-1]/theta_sat)^nd)*((theta[i]-theta[i-1])/z[i])
-     outflow= (-dsat*(theta[i]/theta_sat)^nd)*((theta[i+1]-theta[i])/z[i+1])
+     inflow = (-dsat*(theta[i-1]/theta_sat)^nd)*((theta[i]-theta[i-1])/z[i])/z[i]
+     outflow= (-dsat*(theta[i]/theta_sat)^nd)*((theta[i+1]-theta[i])/z[i+1])/z[i]
       }
       
     # last layer - water that outflows from this layer is gone forever. Values are stored in deep_drainage.
       if(i == (n)) {
-    inflow = (-dsat*(theta[i-1]/theta_sat)^nd)*((theta[i]-theta[i-1])/z[i])
-    outflow = ((ksat)*(theta[i]/theta_sat)^nk)
+    inflow = (-dsat*(theta[i-1]/theta_sat)^nd)*((theta[i]-theta[i-1])/z[i])/z[i]
+    outflow = ((ksat)*(theta[i]/theta_sat)^nk)/z[i]
     deep_drainage = ((ksat)*(theta[i]/theta_sat)^nk)
       }
     
