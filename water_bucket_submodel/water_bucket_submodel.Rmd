@@ -464,6 +464,84 @@ logistic_solution %>%
 
 ####END HERE, everything below is a draft###########
 
+Unless otherwise mentioned, the info written below is what was confirmed as our basic model on the plant - water meeting on 13_12_2021 with Daniel, Andrew and Mitch. 
+
+Let's create a simplistic light-water competition model. At the most basic level, changes in soil water content $\theta$ over time  is determined by the following balance equation:
+
+$$\frac{d\theta}{dt} = (R - E)/z,$$
+where R is the precipitation per unit time $(m^3 H_2O/m^2)$ and E is the stand-level evapotranspiration $(m^3 H_2O/m^2)$ and $z (m)$ is the soil depth of the layer in question. The soil depth is necessary to convert the inputs and outputs into the $(m^3 H_2O/m^3)$ scale of $\theta$.  The water balance is important for two reasons. Firstly, the water balance will influence the ability of plants to assimilate carbon through a very simple reduction of maximum assimilation rate.
+
+In the current PLANT framework, plants are assumed to assimilate carbon at some rate $A_{max}$.
+
+In the water competition model, assimilation rate, $A$, will be modelled as:
+
+$$A = A_{max} * \beta$$,
+
+where $B$ is a unitless soil moisture stress factor which is modelled as:
+
+$$\beta= (\frac{\theta}{\theta_{sat}}).$$
+$\theta$ is the volumetric soil moisture $(m^3 H_2O/m^3)$ and $\theta_{sat}~(m^3 H_2O/m^3)$ is the soil moisture when the soil is saturated. Thus, assimilation goes down to zero as $\beta$ approaches zero. 
+
+The soil water balance is also influenced by evapotranspiration, because it removes water, which will, in turn, influence the assimilation rate of plants in the next time step.
+
+To calculate stand-level evapotranspiration, we sum the species-level stand-level evaporatranspirations which are found by integrating across canopy height, $h$:
+
+$$E = \sum_i \int_0^{H_{max}}E_p(h)A_L(h)N(h)~dh,$$
+
+where $E_p$ is the plant-level evapotranspiration $(m^3 H_2O/m^{2}), $A_l$ is the transpiring leaf area $m^2$ and $N$ is the number of individuals per $m^2$ at a given height.
+
+$E_p$ is a function of both water vapour conductance, leaf-to-air vapour pressure deficit, $D_l~(kPa)$ and atmospheric pressure $P_{atm}~(kPa)$:
+
+$$E_p = 10^3(\frac{g_sg_bD_l}{g_s+g_bP_{atm}}),$$
+where $g_s$ is stomatal conductance $mol~m^{-2}~s^{-1}$ and $g_b$ is conductance from the boundary layer to the atmosphere$ mol~m^{-2}~s^{-1}$. Here, we calculate stomatal conductance as a reducing function of soil moisture stress.
+
+$$g_s = g_{s_{max}}\beta$$
+$g_b$ can be calculated based on leaf area and wind speed using the following equation:
+
+$$g_b = 0.00662*(u/d)^{0.5}*(P/RT)$$
+where $u$ is wind speed $(m/s)$, $P$ is the atmospheric pressure $(Pa)$, $R$ is the molar gas constant $(8.314~J~mol^{-1}~K^{-1})$ (the term at the end converts from $m~s^{-1}$ to $\frac{mol}{m^2~s^-1}$)
+
+d is the characteristic dimmesion of the leaf and is calculated as a function of individual leaf area $(m^2)$:
+
+$$A_{L_I} = 1.5~d^2$$
+Plant-level transpiration, which is now in moles, would then be converted to an equivalent amount of liquid water in units of $\frac{m^3}{m^2}$.
+
+############From here, I discuss various possibilities for root water uptake, which, in combination with multiple draining layers, might be more detail than is necessary for creating a simple water competition model##################
+
+
+We also have to consider how root competition affects this model.
+
+Fine root distribution could be modelled as in Duursma and Medlyn (2011):
+
+$$F_R = (1-b^{100*zi})/(1-b^{100*Z})$$
+b parameter from Jackson et al.(1996; Oecologia)
+
+```{r}
+z <- seq(0,10, by=0.1)
+b <- 0.99
+F_r = (1-b^(100*z))/(1-b^(100*max(z)))
+ggplot() + geom_line(aes(x=z, y=F_r)) + theme_classic()
+  
+```
+
+Root competition could be modelled as follows:
+
+By taking a weighted avreage of $G_s$ throughout the soil layers based on the distribution of the roots in the soil bank. For example, when calculating $g_s$, if 88% of the root fraction is in the top soil layer and 12% of the root fraction is in the second layer, than g_s is claculated as follows 
+
+$$g_{s,avg} = g_{s1}*0.88 +g_{s2}*0.12 $$
+We then need to then calculate transpiration from the different soil layers. This could be done by similarly dividing the transpiration across layers by the relevant root fraction. So, for example, 88% of the transpiration calculated using the weighted $gs_avg$ would then be allocated to be removed from the top layer. 
+
+
+########End section about roots#####
+
+
+
+
+
+
+
+
+
 
 ```{r warning=FALSE}
 #ignore below for now
