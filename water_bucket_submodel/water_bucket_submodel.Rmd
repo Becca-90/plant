@@ -471,13 +471,13 @@ Let's create a simplistic light-water competition model. At the most basic level
 $$\frac{d\theta}{dt} = (R - E)/z,$$
 where R is the precipitation per unit time $(m^3 H_2O/m^2)$ and E is the stand-level evapotranspiration $(m^3 H_2O/m^2)$ and $z (m)$ is the soil depth of the layer in question. The soil depth is necessary to convert the inputs and outputs into the $(m^3 H_2O/m^3)$ scale of $\theta$.  The water balance is important for two reasons. Firstly, the water balance will influence the ability of plants to assimilate carbon through a very simple reduction of maximum assimilation rate.
 
-In the current PLANT framework, plants are assumed to assimilate carbon at some rate $A_{max}$.
+In the current PLANT framework, plants are assumed to assimilate carbon at some rate $A_{max}$. So, we can capitalise on the fact that assimilation is already being calculated, and assume that water influences plants by reducin assimilation. 
 
 In the water competition model, assimilation rate, $A$, will be modelled as:
 
 $$A = A_{max} * \beta$$,
 
-where $B$ is a unitless soil moisture stress factor which is modelled as:
+where $\beta$ is a unitless soil moisture stress factor which is modelled as:
 
 $$\beta= (\frac{\theta}{\theta_{sat}}).$$
 $\theta$ is the volumetric soil moisture $(m^3 H_2O/m^3)$ and $\theta_{sat}~(m^3 H_2O/m^3)$ is the soil moisture when the soil is saturated. Thus, assimilation goes down to zero as $\beta$ approaches zero. 
