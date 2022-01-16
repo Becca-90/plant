@@ -1,5 +1,5 @@
 ---
-title: "soil_heat_transfer"
+title: "radiation_soil_surface"
 author: "Isaac Towers"
 date: "06/12/2021"
 output: html_document
@@ -7,24 +7,147 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
+rm(list=ls())
+
+source("R/constants.R")
+source("R/functions.R")
+```
+
+Calculate QN
+
+```{r}
+#parameters
+reflectance_soil <- 0.23
+emmissivity_soil <- 0.95 #Duursma & Medlyn
+
+#meteorological variables
+air_temp <- 303.15 #K
+soil_temp <- seq(243.15,393.15) #K
+shortwave_irradiance_d <- 100 #W m^-2
+
+R_LW_d <- 1*stefan_Boltzmann*((air_temp-20)^4) #jones 1992
+R_LW_u <- emmissivity_soil*stefan_Boltzmann*(soil_temp^4)
+
+QN <- shortwave_irradiance_d*(1-reflectance_soil) + R_LW_d - R_LW_u
 ```
 
 ```{r}
-##Based on Lu, Ren and Gong 2007. Held up by the fact that I can't understand the Fourier equation and the derivation method for heat transfer. 
-
-alpha_param <- list(coarse = 0.96, fine = 0.27)
-theta_sat <- 0.4
-theta<- seq(0.0, 0.4, 0.01)
-s_r <- theta/theta_sat
-K_e <- exp(a_param$coarse*(1-s_r^(a_param$coarse-1.33)))
-a_param <- 0.56
-b_param <- 0.51 
-porosity = theta_sat
-lambda_dry = -a_param*porosity + b_param
-lambda_sat = (lambda_s^(1-n))*(lambda_w^n)
-lambda_s = (lambda_q^q)*(lambda_o^(1-q))
-lambda_q = 
-
-plot(lambda_dry~porosity)
+library(ggplot2)
+ggplot() +
+  geom_line(aes(x=soil_temp, y=QN)) 
 
 ```
+
+
+
+Calculate QE
+
+```{r}
+theta_sat <- 0.4
+theta <- 0.3
+depth_of_top_layer<- 0.10
+height_canopy = 0
+d= height_canopy * 0.64 # Jones 1992, Campbell & Norman 1998
+z= 4 # height at which wind speed below was measured, would need to be extracted from wind profile
+u = 3.5 # wind speed 3.5m s^-1 would be extracted from canopy wind profile
+zo = 0.0015 # roughness length also extracted frmo canopy wind profile
+a <- 0.58
+n <- 8.7
+E_a <- 0.9
+patm_kPa <- 101.325
+h2oMw <- 18.e-3
+airMw <- 29.e-3
+
+
+
+soil_wc <- calc_soil_wc(theta, theta_sat)
+
+G_am <- calc_G_am(u,z,d,zo)
+
+diffus_water_vapour <- calc_diffus_water_vapour(soil_temp)
+
+eff_diffus_water_vapour <- calc_eff_diffus_water_vapour(diffus_water_vapour,theta_sat,tortuosity) 
+
+dry_layer <- calc_dry_layer(soil_wc, depth_top_layer)
+
+G_ws <- calc_G_ws(eff_diffus_water_vapour, theta_sat,dry_layer)
+
+psi_top_layer <- calc_psi(a,n,soil_wc)
+
+E_sat <-calc_E_sat(soil_temp)
+
+E_soil <-calc_E_soil(psi_top_layer, soil_temp, E_sat)
+
+rho <- calc_rho(air_temp)
+
+G_st = 1/(1/G_am+1/G_ws)
+
+QE = G_st*latent_heat_evap_constant*(rho/patm_kPa)*(h2oMw/airMw)*(E_a-E_soil)
+
+```
+
+```{r}
+ggplot2::ggplot() +
+  ggplot2::geom_line(ggplot2::aes(x=soil_temp, y=QE)) 
+```
+
+
+Calculate Q_h
+
+```{r}
+rho <- calc_rho(air_temp)
+Q_h <- heat_cap_air*rho*G_am*(air_temp - soil_temp)
+```
+
+```{r}
+library(ggplot2)
+ggplot2::ggplot() +
+  ggplot2::geom_line(ggplot2::aes(x=soil_temp, y=Q_h)) 
+```
+
+```{r}
+QC <- -3*(soil_temp-air_temp)/0.3
+plot(QC ~ soil_temp)
+```
+
+
+```{r}
+library(ggplot2)
+library(tidyverse)
+
+Q_h + QN + QE -> net_balance
+tibble(soil_temp = soil_temp, "net_balance_Q_H+Q_N+Q_E"=net_balance, "Q_h Sensible Heat Flux" = Q_h, "Q_N Net Radiation" = QN, "Q_E Latent Heat" = QE) %>%
+  pivot_longer(-soil_temp, names_to = "Energy_Flux_Component", values_to = "Energy Flux (W/m2)")%>%
+  mutate(radiation = "100 W m^-2") -> Low_radiation
+Q_h + QN + QE -> net_balance
+tibble(soil_temp = soil_temp, "net_balance_Q_H+Q_N+Q_E"=net_balance, "Q_h Sensible Heat Flux" = Q_h, "Q_N Net Radiation" = QN, "Q_E Latent Heat" = QE) %>%
+  pivot_longer(-soil_temp, names_to = "Energy_Flux_Component", values_to = "Energy Flux (W/m2)")%>%
+  mutate(radiation = "900 W m^-2") -> High_radiation
+
+High_radiation %>%
+  mutate(intersection_point = 335) -> High_radiation
+
+Low_radiation %>%
+  mutate(intersection_point = 305) -> Low_radiation
+
+
+High_radiation %>%
+  bind_rows(Low_radiation) -> radiation
+
+
+radiation %>%
+  ggplot2::ggplot() +
+  geom_hline(yintercept=0, linetype=2) +
+  geom_vline(aes(xintercept=intersection_point), linetype=2) +
+  ggplot2::geom_line(ggplot2::aes(x=soil_temp, y=`Energy Flux (W/m2)`, group = Energy_Flux_Component, colour=Energy_Flux_Component), size=1.5) +
+  theme_classic() +
+  xlab("Soil Temperature (K)")+
+  facet_wrap(~radiation) -> p
+
+ggsave(p, filename = "plot.png", width=12, height=10)
+
+tidyr::tibble(net_balance=net_balance, soil_temp=soil_temp)
+
+```
+

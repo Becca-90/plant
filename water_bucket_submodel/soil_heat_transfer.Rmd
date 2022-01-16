@@ -14,17 +14,24 @@ knitr::opts_chunk$set(echo = TRUE)
 
 alpha_param <- list(coarse = 0.96, fine = 0.27)
 theta_sat <- 0.4
-theta<- seq(0.0, 0.4, 0.01)
+theta<- seq(0,0.4,0.01)
 s_r <- theta/theta_sat
-K_e <- exp(a_param$coarse*(1-s_r^(a_param$coarse-1.33)))
+K_e <- exp(alpha_param$coarse*(1-s_r^(alpha_param$coarse-1.33)))
 a_param <- 0.56
 b_param <- 0.51 
 porosity = theta_sat
-lambda_dry = -a_param*porosity + b_param
-lambda_sat = (lambda_s^(1-n))*(lambda_w^n)
-lambda_s = (lambda_q^q)*(lambda_o^(1-q))
-lambda_q = 
+q = 0.3
+lambda_o = 2.0 # W m^-1 K^-1lambda_dry = -a_param*porosity + b_param
+lambda_q = 7.7 # W m^-1 K^-1
+lambda_w=0.594
 
-plot(lambda_dry~porosity)
+lambda_s = (lambda_q^q)*(lambda_o^(1-q))
+lambda_sat = (lambda_s^(1-n))*(lambda_w^n)
+
+thermcond_fun <- (lambda_sat-lambda_dry)*K_e+lambda_dry
+plot(thermcond_fun~theta)
+
+
+
 
 ```
