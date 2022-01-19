@@ -6,12 +6,15 @@
 \usage{
 run_scm_collect(
   p,
+  env = make_environment(parameters = p),
   ctrl = scm_base_control(),
   include_competition_effect = FALSE
 )
 }
 \arguments{
 \item{p}{A \code{Parameters} object}
+
+\item{env}{Environment object (defaults to FF16_Environment)}
 
 \item{ctrl}{Control object}
 
