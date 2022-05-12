@@ -114,8 +114,28 @@ identical(p$hyperpar, FF16_hyperpar)
 ```
 
 `k_I` is the light extinction coefficient,
-`disturbance_mean_interval` is the mean disturbance interval.  The
-`strategy_default` member is a Strategy:
+`disturbance_mean_interval` is the mean disturbance interval.  
+
+Both `strategy` and `strategy_list` functions as well as the functions
+that utilise them (such as `individual_list`) require an argument
+known as `birth_rate_list` to set the birth rates of each species.
+
+This object is a list that contains either constant or variable birth rates
+for each species. For constant birth rates we simply need to provide a constant 
+numeric value, wheras for variable birth rates we supply a list that contains a 
+set of x and y control points that will be used to interpolate the birth rate 
+spline. For example:
+```{r}
+x <- seq(0, 200)
+birth_rates <- list(
+  species1 = list(x = x, y = 1 + sin(x)), # variable
+  species2 = 2 # constant
+)
+```
+The other examples in this document will simply set a constant birth rate of 
+`1.0` for the one species present.
+
+The `strategy_default` member of a `Parameters` object is a Strategy:
 
 ```{r}
 class(p$strategy_default)
@@ -125,7 +145,7 @@ This is the Strategy object that all others will be built from by
 difference.  Running
 
 ```{r}
-s <- strategy(trait_matrix(0.1, "lma"), p)
+s <- strategy(trait_matrix(0.1, "lma"), p, birth_rate_list=1.0)
 ```
 
 will create a strategy `s` where lma is set but also all the
@@ -138,7 +158,7 @@ strategies:
 lma <- trait_matrix(seq(0.1, 0.5, length.out=5), "lma")
 FF16_hyperpar(trait_matrix(lma, "lma"), s)
 
-ss <- strategy_list(lma, p)
+ss <- strategy_list(lma, p, birth_rate_list=1.0)
 length(ss)
 ```
 
@@ -155,7 +175,7 @@ There's a convenience function `plant_list` that returns a set of
 *plants* based on a vector of traits:
 
 ```{r}
-pp <- individual_list(lma, p)
+pp <- individual_list(lma, p, birth_rate_list=1.0)
 
 sapply(pp, function(p) p$compute_competition(0))
 ```
