@@ -1,0 +1,14 @@
+---
+title: "Setting up and using Extrinsic Drivers in the plant model"
+author: "Mitchell Henry"
+date: "2022"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{patch}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+# Rainfall
+
+The splines for rainfall over time are set at the `Environment` level:
