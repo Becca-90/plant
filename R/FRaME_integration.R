@@ -292,3 +292,83 @@ randomise_forest <- function(){
   
   return(spTab)
 }
+
+
+#' Replaces function in plant when it fails to call strategy object
+#'
+#' @param x 
+#' @param parameters 
+#' @param hyperpar 
+#' @param birth_rate_list 
+#'
+#' @return
+#' @export
+#'
+
+strategy_listX <- function(x, parameters, hyperpar=param_hyperpar(parameters), birth_rate_list) {
+  if (!is.matrix(x)) {
+    stop("Invalid type x -- expected a matrix")
+  }
+  
+  strategy <- parameters$strategy_default
+  x <- hyperpar(x, strategy) # Removes error in unlist(s[names(x1)]) : argument "s" is missing, with no default
+  
+  trait_names <- colnames(x)
+  f <- function(xi, br) {
+    strategy[trait_names] <- xi
+    if (is.list(br)) {
+      strategy$birth_rate_x <- br$x
+      strategy$birth_rate_y <- br$y
+      strategy$is_variable_birth_rate <- TRUE
+    } else if (is.numeric(br)) {
+      strategy$birth_rate_y <- br
+      strategy$is_variable_birth_rate <- FALSE
+    } else {
+      stop("Invalid type in birth_rate_list - need either a list with x, y control points or a numeric")
+    }
+    strategy
+  }
+  mapply(f, plant:::matrix_to_list(x), birth_rate_list, SIMPLIFY = FALSE)
+}
+
+
+#' Replaces function in plant when it fails to call strategy object
+#'
+#' @param trait_matrix 
+#' @param p 
+#' @param hyperpar 
+#' @param mutant 
+#' @param birth_rate_list 
+#'
+#' @return
+#' @export
+#'
+
+expand_parametersX <- function(trait_matrix, p, hyperpar=param_hyperpar(p), mutant=TRUE, birth_rate_list = 1) {
+  if (length(mutant) != 1L) {
+    stop("mutant must be scalar")
+  }
+  if(nrow(trait_matrix) != length(birth_rate_list)) {
+    stop("Must provide exactly one birth rate input for each species")
+  }
+  extra <- strategy_listX(trait_matrix, p, hyperpar, birth_rate_list)
+  n_extra <- length(extra)
+  
+  ret <- p <- validate(p) # Ensure times are set up correctly.
+  ret$strategies <- c(p$strategies, extra)
+  ret$is_resident <- c(p$is_resident, rep(!mutant, n_extra))
+  
+  ## Introduce mutants at all unique times:
+  if (length(p$strategies) == 0L || !mutant) {
+    times_new <- p$node_schedule_times_default
+  } else {
+    times_new <- unique(sort(unlist(p$node_schedule_times)))
+  }
+  ret$node_schedule_times <- c(p$node_schedule_times,
+                               rep(list(times_new), n_extra))
+  
+  ## Clear this if it's present:
+  attr(ret, "net_reproduction_ratios") <- NULL
+  
+  ret
+}
